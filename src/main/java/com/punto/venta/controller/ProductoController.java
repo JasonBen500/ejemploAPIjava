@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.punto.venta.dto.MessageResponse;
 import com.punto.venta.dto.ProductoDTO;
 import com.punto.venta.repository.ProductoRepository;
@@ -20,12 +20,12 @@ import com.punto.venta.service.ProductoService;
 @RequestMapping("/productos")
 @CrossOrigin(origins = "*")
 public class ProductoController {
+       private final ProductoRepository productoRepository;
     private final ProductoService productoService;
-    private final ProductoRepository productoRepository;
 
     public ProductoController(ProductoService productoService, ProductoRepository productoRepository) {
-        this.productoService = productoService;
         this.productoRepository = productoRepository;
+        this.productoService = productoService;
     }
 
     @GetMapping
@@ -33,7 +33,22 @@ public class ProductoController {
         return productoService.listarProductos();
     }
 
-        @PostMapping
+    @GetMapping("/activos")
+    public List<ProductoDTO> mostrarActivos() {
+    return productoService.mostrarActivos();
+    }
+
+    @GetMapping("/activosFiltro")
+    public List<ProductoDTO> mostrarActivosFiltro(@RequestParam String nombre) {
+    return productoService.mostrarActivosFiltro(nombre);
+    }
+
+    @GetMapping("/activosFiltroTop2")
+    public List<ProductoDTO> mostrarActivosFiltroTop2(@RequestParam String nombre) {
+    return productoService.mostrarActivosFiltroTop2(nombre);
+    }
+
+    @PostMapping
     public ResponseEntity<MessageResponse> crearProducto(@RequestBody ProductoDTO productoDTO) {
         try {
             productoService.crear(productoDTO);

@@ -1,8 +1,5 @@
 package com.punto.venta.service;
 
-import java.sql.Date;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,53 +14,75 @@ import com.punto.venta.repository.PedidoRepository;
 public class PedidoService {
 private final PedidoRepository pedidoRepository;
 
-    public PedidoService(PedidoRepository pedidoRepository){
+     private final PedidoRepository pedidoRepository1;
+
+    public PedidoService(PedidoRepository pedidoRepository, PedidoRepository pedidoRepository1) {
         this.pedidoRepository = pedidoRepository;
+        this.pedidoRepository1 = pedidoRepository1;
+    }
+
+    public List<PedidoDTO> listarTodos() {
+        return pedidoRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<PedidoDTO> mostrarActivosOrdenados() {
+    return pedidoRepository.findByEstadoTrueOrderByIdPedidoDesc()
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+    public List<PedidoDTO> mostrarActivos() {
+    return pedidoRepository.findByEstadoTrue()
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+    public List<PedidoDTO> mostrarPedidosActivos() {
+    return pedidoRepository.findByEstadoPedidoTrue()
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+    public PedidoDTO crear(PedidoDTO dto) {
+        Cliente cliente = new Cliente();
+        cliente.setIdCliente(dto.getIdCliente());
+
+        boolean tienePedidoAbierto = pedidoRepository.existsByIdClienteAndEstadoPedidoFalse(cliente);
+        if (tienePedidoAbierto) {
+            throw new RuntimeException("El cliente ya tiene un pedido abierto");
+        }
+
+        return convertToDTO(pedidoRepository.save(convertToEntity(dto)));
+    }
+
+    private PedidoDTO convertToDTO(Pedido c) {
+        PedidoDTO dto = new PedidoDTO();
+        dto.setIdPedido(c.getIdPedido());
+        dto.setEstado(c.getEstado());
+        dto.setEstadoPedido(c.getEstadoPedido());
+        dto.setIdCliente(c.getIdCliente().getIdCliente());
+        dto.setFechaPedido(c.getFechaPedido());
+        dto.setEstadoPedido(c.getEstadoPedido());
+        dto.setTotal(c.getTotal());
+        return dto;
     }
 
     private Pedido convertToEntity(PedidoDTO dto) {
-    Pedido pedido = new Pedido();
-
-    Cliente cliente = new Cliente();
-    cliente.setIdCliente(dto.getIdCliente());
-    pedido.setIdCliente(cliente);
-
-    pedido.setEstado(dto.getEstado());
-
-    if (dto.getFechaPedido() != null) {
-        pedido.setFechaPedido(Date.from(dto.getFechaPedido().atZone(ZoneId.systemDefault()).toInstant()));
-    }
-
-    pedido.setEstadoPedido(dto.getEstadoPedido());
-    pedido.setTotal(dto.getTotal());
-    return pedido;
-}
-
-private PedidoDTO convertToDTO(Pedido p) {
-    PedidoDTO dto = new PedidoDTO();
-    dto.setIdPedido(p.getIdPedido());
-    dto.setIdCliente(p.getIdCliente().getIdCliente());
-    dto.setEstado(p.getEstado());
-
-    if (p.getFechaPedido() != null) {
-        dto.setFechaPedido(LocalDateTime.ofInstant(p.getFechaPedido().toInstant(), ZoneId.systemDefault()));
-    }
-
-    dto.setEstadoPedido(p.getEstadoPedido());
-    dto.setTotal(p.getTotal());
-    return dto;
-}
-
-    public List<PedidoDTO> listarTodos(){
-        return pedidoRepository.findAll()
-        .stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
-    }
-
-    public PedidoDTO save(PedidoDTO dto){
-        Pedido pedido = convertToEntity(dto);
-        Pedido guardada = pedidoRepository.save(pedido);
-        return convertToDTO(guardada);
+        Pedido pedido = new Pedido();
+        pedido.setIdPedido(dto.getIdPedido());
+        pedido.setEstado(dto.getEstado());
+        Cliente cliente = new Cliente();
+        cliente.setIdCliente(dto.getIdCliente());
+        pedido.setIdCliente(cliente);
+        pedido.setFechaPedido(dto.getFechaPedido());
+        pedido.setTotal(dto.getTotal());
+        pedido.setEstadoPedido(dto.getEstadoPedido());
+        return pedido;
     }
 }

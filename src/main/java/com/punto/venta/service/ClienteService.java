@@ -15,44 +15,50 @@ import com.punto.venta.repository.ClienteRepository;
 public class ClienteService {
     private final ClienteRepository clienteRepository;
 
-    public ClienteService (ClienteRepository clienteRepository){
+    public ClienteService(ClienteRepository clienteRepository) {
         this.clienteRepository = clienteRepository;
     }
 
-    private Cliente convertToEntity(ClienteDTO dto) {
-    Cliente cliente = new Cliente();
-    cliente.setNombre(dto.getNombre());
-    cliente.setApellido(dto.getApellido());
-    cliente.setEstado(dto.getEstado());
-    cliente.setEmail(dto.getEmail());
-    cliente.setTelefono(dto.getTelefono());
-    cliente.setFechaRegistro(dto.getFecharegistro());
-    return cliente;
-}
-
-private ClienteDTO convertToDTO(Cliente c) {
-    ClienteDTO dto = new ClienteDTO();
-    dto.setIdCliente(c.getIdCliente());
-    dto.setEstado(c.getEstado());
-    dto.setNombre(c.getNombre());
-    dto.setApellido(c.getApellido());
-    dto.setEmail(c.getEmail());
-    dto.setTelefono(c.getTelefono());
-    dto.setFecharegistro(c.getFechaRegistro());
-    return dto;
-}
-
-    public List<ClienteDTO>listarTodos(){
+    public List<ClienteDTO> listarTodos() {
         return clienteRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<ClienteDTO> mostrarActivos(){
+        return clienteRepository.findByEstadoTrue()
         .stream()
         .map(this::convertToDTO)
         .collect(Collectors.toList());
     }
 
-    public ClienteDTO save(ClienteDTO dto){
-        Cliente cliente = convertToEntity(dto);
-        Cliente guardada = clienteRepository.save(cliente);
-        return convertToDTO(guardada);
+    public List<ClienteDTO> mostrarActivosFiltroNombre(String nombre){
+        return clienteRepository.findByEstadoTrueAndNombreContainingIgnoreCase(nombre)
+        .stream()
+        .map(this::convertToDTO)
+        .collect(Collectors.toList());
+    }
+
+    public List<ClienteDTO> mostrarActivoFIltroTop2Nombre (String nombre){
+        return clienteRepository.findByEstadoTrueAndApellidoContainingIgnoreCase(nombre)
+        .stream()
+        .map(this::convertToDTO)
+        .collect(Collectors.toList());
+    }
+
+    public List<ClienteDTO> mostrarActivoFIltroApellido(String apellido){
+        return clienteRepository.findByEstadoTrueAndApellidoContainingIgnoreCase(apellido)
+        .stream()
+        .map(this::convertToDTO)
+        .collect(Collectors.toList());
+    }
+
+    public List<ClienteDTO> mostrarActivoTop2FiltroApellido(String apellido){
+        return clienteRepository.findTop2ByEstadoTrueAndApellidoContainingIgnorecase(apellido)
+        .stream()
+        .map(this::convertToDTO)
+        .collect(Collectors.toList());
     }
 
     public ClienteDTO crear(ClienteDTO dto) {
@@ -63,5 +69,63 @@ private ClienteDTO convertToDTO(Cliente c) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El cliente ya existe");
         }
         return convertToDTO(clienteRepository.save(convertToEntity(dto)));
+    }
+
+    public ClienteDTO actualizar(Integer idCliente, ClienteDTO dto) {
+        Cliente clienteExistente = clienteRepository.findById(idCliente)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
+        if (dto.getNombre() != null) {
+            clienteExistente.setNombre(dto.getNombre());
+        }
+        if (dto.getEstado() != null) {
+            clienteExistente.setEstado(dto.getEstado());
+        }
+        if (dto.getEmail() != null) {
+            clienteExistente.setEmail(dto.getEmail());
+        }
+        if (dto.getTelefono() != null) {
+            clienteExistente.setTelefono(dto.getTelefono());
+        }
+        if (dto.getFecharegistro() != null) {
+            clienteExistente.setFechaRegistro(dto.getFecharegistro());
+        }
+        return convertToDTO(clienteRepository.save(clienteExistente));
+    }
+
+    public ClienteDTO anular(Integer idCliente, ClienteDTO dto) {
+        Cliente clienteExistente = clienteRepository.findById(idCliente)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
+        clienteExistente.setEstado(false);
+        return convertToDTO(clienteRepository.save(clienteExistente));
+    }
+
+    public void eliminar(Integer idCliente) {
+        if (!clienteRepository.existsById(idCliente)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado");
+        }
+        clienteRepository.deleteById(idCliente);
+    }
+
+    private ClienteDTO convertToDTO(Cliente c) {
+        ClienteDTO dto = new ClienteDTO();
+        dto.setIdCliente(c.getIdCliente());
+        dto.setNombre(c.getNombre());
+        dto.setApellido(c.getApellido());
+        dto.setEstado(c.getEstado());
+        dto.setEmail(c.getEmail());
+        dto.setTelefono(c.getTelefono());
+        dto.setFecharegistro(c.getFechaRegistro());
+        return dto;
+    }
+
+    private Cliente convertToEntity(ClienteDTO dto) {
+        Cliente cliente = new Cliente();
+        cliente.setNombre(dto.getNombre());
+        cliente.setApellido(dto.getApellido());
+        cliente.setEstado(dto.getEstado());
+        cliente.setTelefono(dto.getTelefono());
+        cliente.setEmail(dto.getEmail());
+        cliente.setFechaRegistro(dto.getFecharegistro());
+        return cliente;
     }
 }

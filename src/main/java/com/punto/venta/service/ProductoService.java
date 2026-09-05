@@ -3,18 +3,14 @@ package com.punto.venta.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import com.punto.venta.dto.ClienteDTO;
 import com.punto.venta.dto.ProductoDTO;
-import com.punto.venta.entity.Cliente;
 import com.punto.venta.entity.Producto;
 import com.punto.venta.repository.ProductoRepository;
 
 @Service
 public class ProductoService {
+    
     private final ProductoRepository productoRepository;
 
     public ProductoService(ProductoRepository productoRepository) {
@@ -26,6 +22,62 @@ public class ProductoService {
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    public List<ProductoDTO> mostrarActivos() {
+    return productoRepository.findByEstadoTrue()
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+    public List<ProductoDTO> mostrarActivosFiltro(String nombre) {
+    return productoRepository
+            .findByEstadoTrueAndNombreContainingIgnoreCase(nombre)
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+    public List<ProductoDTO> mostrarActivosFiltroTop2(String nombre) {
+    return productoRepository
+            .findTop2ByEstadoTrueAndNombreContainingIgnoreCase(nombre)
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+    public ProductoDTO crear(ProductoDTO dto) {
+        boolean duplicado = productoRepository.existsByNombreIgnoreCase(dto.getNombre());
+        if (duplicado) {
+            throw new RuntimeException("El producto ya existe");
+        }
+        return convertToDTO(productoRepository.save(convertToEntity(dto)));
+    }
+
+    public ProductoDTO actualizar(Integer idProducto, ProductoDTO dto) {
+        Producto productoExistente = productoRepository.findById(idProducto)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        if (dto.getNombre() != null) {
+            productoExistente.setNombre(dto.getNombre());
+        }
+        if (dto.getDescripcion() != null) {
+            productoExistente.setDescripcion(dto.getDescripcion());
+        }
+        if (dto.getPrecio() != null) {
+            productoExistente.setPrecio(dto.getPrecio());
+        }
+        if (dto.getStock() != null) {
+            productoExistente.setStock(dto.getStock());
+        }
+        return convertToDTO(productoRepository.save(productoExistente));
+    }
+
+    public void eliminar(Integer idProducto) {
+        if (!productoRepository.existsById(idProducto)) {
+            throw new RuntimeException("Producto no encontrado");
+        }
+        productoRepository.deleteById(idProducto);
     }
 
     private ProductoDTO convertToDTO(Producto c) {
@@ -46,20 +98,4 @@ public class ProductoService {
         producto.setStock(dto.getStock());
         return producto;
     }
-
-     public ProductoDTO save(ProductoDTO dto){
-        Producto producto = convertToEntity(dto);
-        Producto guardada = productoRepository.save(producto);
-        return convertToDTO(guardada);
-    }
-
-      public ProductoDTO crear(ProductoDTO dto) {
-        boolean duplicado = productoRepository
-                .existsByNombreIgnoreCase(dto.getNombre();
-        if (duplicado) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El cliente ya existe");
-        }
-        return convertToDTO(productoRepository.save(convertToEntity(dto)));
-    }
-
 }

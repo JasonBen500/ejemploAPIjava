@@ -1,7 +1,5 @@
 package com.punto.venta.service;
 
-
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,8 +12,11 @@ import com.punto.venta.repository.CategoriaRepository;
 
 @Service
 public class CategoriaService {
-    @Autowired
-    private CategoriaRepository categoriaRepository;
+    private final CategoriaRepository categoriaRepository;
+
+    CategoriaService(CategoriaRepository categoriaRepository) {
+        this.categoriaRepository = categoriaRepository;
+    }
 
     public List<CategoriaDTO> findAll() {
         return categoriaRepository.findAll()
@@ -24,10 +25,35 @@ public class CategoriaService {
                 .collect(Collectors.toList());
     }
 
-    public CategoriaDTO save(CategoriaDTO dto) {
-        Categoria categoria = convertToEntity(dto);
-        Categoria guardada = categoriaRepository.save(categoria);
-        return convertToDTO(guardada);
+    public List<CategoriaDTO> mostrarActivos() {
+        return categoriaRepository.findByEstadoTrue()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<CategoriaDTO> mostrarActivosFIltro(String nombre) {
+        return categoriaRepository
+                .findByEstadoTrueAndNombreContainingIgnoreCase(nombre)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+     public List<CategoriaDTO> mostrarActivosFIltroTop2(String nombre) {
+        return categoriaRepository
+                .findTop2ByEstadoTrueAndNombreContainingIgnoreCase(nombre)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public CategoriaDTO crearCategoria(CategoriaDTO dto) {
+        // boolean duplicado = categoriaRepository.existsByNombreIgnoreCase(dto.getNombre());
+        // if (duplicado) {
+        //     throw new RuntimeException("La categoria ya existe");
+        // }
+        return convertToDTO(categoriaRepository.save(convertToEntity(dto)));
     }
 
     public void eliminarCategoria(Integer idCategoria) {
@@ -75,7 +101,5 @@ public class CategoriaService {
         categoria.setEstado(true);
         return categoria;
     }
-
-
 
 }

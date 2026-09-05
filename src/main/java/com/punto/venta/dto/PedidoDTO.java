@@ -2,7 +2,6 @@ package com.punto.venta.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
 import lombok.Data;
 
 @Data

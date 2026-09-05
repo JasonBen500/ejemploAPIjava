@@ -20,7 +20,7 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -43,7 +43,7 @@ public class Pedido implements Serializable {
     private Boolean estado;
     @Column(name = "FECHA_PEDIDO")
     @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaPedido;
+    private LocalDateTime fechaPedido;
     @Column(name = "ESTADO_PEDIDO")
     private Boolean estadoPedido;
     // @Max(value=?)  @Min(value=?)//if you know range of your decimal fields consider using these annotations to enforce field validation
@@ -78,11 +78,11 @@ public class Pedido implements Serializable {
         this.estado = estado;
     }
 
-    public Date getFechaPedido() {
+    public LocalDateTime getFechaPedido() {
         return fechaPedido;
     }
 
-    public void setFechaPedido(Date fechaPedido) {
+    public void setFechaPedido(LocalDateTime fechaPedido) {
         this.fechaPedido = fechaPedido;
     }
 

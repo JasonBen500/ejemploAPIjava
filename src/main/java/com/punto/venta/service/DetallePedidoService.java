@@ -13,52 +13,70 @@ import com.punto.venta.repository.DetallePedidoRepository;
 
 @Service
 public class DetallePedidoService {
- private final DetallePedidoRepository detallePedidoRepository;
+   private final DetallePedidoRepository detallePedidoRepository;
 
-    public DetallePedidoService(DetallePedidoRepository detallePedidoRepository){
-        this.detallePedidoRepository = detallePedidoRepository;
-    }
-
-    private DetallePedido convertToEntity(DetallePedidoDTO dto) {
-    DetallePedido detallePedido = new DetallePedido();
-
-    Pedido pedido = new Pedido();
-    pedido.setIdPedido(dto.getIdPedido());
-    detallePedido.setIdPedido(pedido);
-
-    Producto producto = new Producto();
-    producto.setIdProducto(dto.getIdProducto());
-    detallePedido.setIdProducto(producto);
-
-    detallePedido.setEstado(dto.getEstado());
-    detallePedido.setCantidad(dto.getCantidad());
-    detallePedido.setPrecioUnitario(dto.getPrecioUnitario());
-    detallePedido.setSubtotal(dto.getSubtotal());
-    return detallePedido;
+    public DetallePedidoService(DetallePedidoRepository detallePedidoRepository) {
+    this.detallePedidoRepository = detallePedidoRepository;
 }
 
-private DetallePedidoDTO convertToDTO(DetallePedido d) {
-    DetallePedidoDTO dto = new DetallePedidoDTO();
-    dto.setIdPedidoDetalle(d.getIdPedidoDetalle());
-    dto.setIdPedido(d.getIdPedido().getIdPedido());
-    dto.setIdProducto(d.getIdProducto().getIdProducto());
-    dto.setEstado(d.getEstado());
-    dto.setCantidad(d.getCantidad());
-    dto.setPrecioUnitario(d.getPrecioUnitario());
-    dto.setSubtotal(d.getSubtotal());
-    return dto;
-}
-
-    public List<DetallePedidoDTO> listarTodos(){
+    public List<DetallePedidoDTO> listarTodos() {
         return detallePedidoRepository.findAll()
-        .stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    public DetallePedidoDTO save(DetallePedidoDTO dto){
-        DetallePedido detallePedido = convertToEntity(dto);
-        DetallePedido guardada = detallePedidoRepository.save(detallePedido);
-        return convertToDTO(guardada);
+    public List<DetallePedidoDTO> mostrarActivosOrden() {
+    return detallePedidoRepository.findByEstadoTrueOrderByIdPedidoDetalleDesc()
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+    public List<DetallePedidoDTO> mostrarActivos() {
+    return detallePedidoRepository.findByEstadoTrue()
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+    public DetallePedidoDTO crear(DetallePedidoDTO dto) {
+        Pedido pedido = new Pedido();
+        pedido.setIdPedido(dto.getIdPedido());
+        Producto producto = new Producto();
+        producto.setIdProducto(dto.getIdProducto());
+        boolean duplicado = detallePedidoRepository.existsByIdPedidoAndIdProducto(pedido, producto);
+        if (duplicado) {
+            throw new RuntimeException("El detalle de pedido ya existe");
+        }
+        return convertToDTO(detallePedidoRepository.save(convertToEntity(dto)));
+    }
+
+    private DetallePedidoDTO convertToDTO(DetallePedido c) {
+        DetallePedidoDTO dto = new DetallePedidoDTO();
+        dto.setIdPedidoDetalle(c.getIdPedidoDetalle());
+        dto.setIdPedido(c.getIdPedido().getIdPedido());
+        dto.setIdProducto(c.getIdProducto().getIdProducto());
+        dto.setEstado(c.getEstado());
+        dto.setCantidad(c.getCantidad());
+        dto.setPrecioUnitario(c.getPrecioUnitario());
+        dto.setSubtotal(c.getSubtotal());
+        return dto;
+    }
+
+    private DetallePedido convertToEntity(DetallePedidoDTO c) {
+        DetallePedido detalle = new DetallePedido();
+        detalle.setIdPedidoDetalle(c.getIdPedidoDetalle());
+        Pedido pedido = new Pedido();
+        pedido.setIdPedido(c.getIdPedido());
+        detalle.setIdPedido(pedido);
+        Producto producto = new Producto();
+        producto.setIdProducto(c.getIdProducto());
+        detalle.setIdProducto(producto);
+        detalle.setEstado(c.getEstado());
+        detalle.setCantidad(c.getCantidad());
+        detalle.setPrecioUnitario(c.getPrecioUnitario());
+        detalle.setSubtotal(c.getSubtotal());
+        return detalle;
     }
 }

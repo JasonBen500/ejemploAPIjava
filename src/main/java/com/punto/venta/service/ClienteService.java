@@ -55,7 +55,7 @@ public class ClienteService {
     }
 
     public List<ClienteDTO> mostrarActivoTop2FiltroApellido(String apellido){
-        return clienteRepository.findTop2ByEstadoTrueAndApellidoContainingIgnorecase(apellido)
+        return clienteRepository.findTop2ByEstadoTrueAndApellidoContainingIgnoreCase(apellido)
         .stream()
         .map(this::convertToDTO)
         .collect(Collectors.toList());

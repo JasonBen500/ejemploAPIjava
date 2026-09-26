@@ -15,7 +15,6 @@ import com.punto.venta.dto.MessageResponse;
 import com.punto.venta.dto.ProductoDTO;
 import com.punto.venta.repository.ProductoRepository;
 import com.punto.venta.service.ProductoService;
-
 @RestController
 @RequestMapping("/productos")
 @CrossOrigin(origins = "*")

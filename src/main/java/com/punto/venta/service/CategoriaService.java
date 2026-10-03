@@ -2,95 +2,68 @@ package com.punto.venta.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import com.punto.venta.dto.CategoriaDTO;
 import com.punto.venta.entity.Categoria;
 import com.punto.venta.repository.CategoriaRepository;
 
 @Service
 public class CategoriaService {
+
     private final CategoriaRepository categoriaRepository;
 
-    CategoriaService(CategoriaRepository categoriaRepository) {
+    public CategoriaService(CategoriaRepository categoriaRepository) {
         this.categoriaRepository = categoriaRepository;
     }
 
     public List<CategoriaDTO> findAll() {
         return categoriaRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public List<CategoriaDTO> mostrarActivos() {
-        return categoriaRepository.findByEstadoTrue()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return categoriaRepository.findByEstadoTrueOrderByIdCategoriaDesc()
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public List<CategoriaDTO> mostrarActivosFIltro(String nombre) {
-        return categoriaRepository
-                .findByEstadoTrueAndNombreContainingIgnoreCase(nombre)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<CategoriaDTO> mostrarActivosFiltro(String nombre) {
+        return categoriaRepository.findByEstadoTrueAndNombreContainingIgnoreCase(nombre)
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-     public List<CategoriaDTO> mostrarActivosFIltroTop2(String nombre) {
-        return categoriaRepository
-                .findTop2ByEstadoTrueAndNombreContainingIgnoreCase(nombre)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<CategoriaDTO> mostrarActivosFiltroTop2(String nombre) {
+        return categoriaRepository.findTop2ByEstadoTrueAndNombreContainingIgnoreCase(nombre)
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public CategoriaDTO crearCategoria(CategoriaDTO dto) {
-        // boolean duplicado = categoriaRepository.existsByNombreIgnoreCase(dto.getNombre());
-        // if (duplicado) {
-        //     throw new RuntimeException("La categoria ya existe");
-        // }
+        if (categoriaRepository.existsByNombreIgnoreCase(dto.getNombre())) {
+            throw new RuntimeException("La categoria ya existe");
+        }
         return convertToDTO(categoriaRepository.save(convertToEntity(dto)));
     }
 
-    public void eliminarCategoria(Integer idCategoria) {
-        if (!categoriaRepository.existsById(idCategoria)) {
-            throw new RuntimeException("La categoria no existe con id " + idCategoria);
-        }
-        categoriaRepository.deleteById(idCategoria);
+    public CategoriaDTO modificarCategoria(Integer idCategoria, CategoriaDTO dto) {
+        Categoria categoria = categoriaRepository.findById(idCategoria)
+                .orElseThrow(() -> new RuntimeException("La categoria no existe con id " + idCategoria));
+        categoria.setNombre(dto.getNombre());
+        categoria.setDescripcion(dto.getDescripcion());
+        return convertToDTO(categoriaRepository.save(categoria));
     }
 
     public CategoriaDTO anularCategoria(Integer idCategoria) {
         Categoria categoria = categoriaRepository.findById(idCategoria)
                 .orElseThrow(() -> new RuntimeException("La categoria no existe con id " + idCategoria));
-        CategoriaDTO categoriaDTO = new CategoriaDTO();
-        categoriaDTO.setEstado(false);
-        categoria.setEstado(categoriaDTO.getEstado());
-
-        Categoria savedCategoria = categoriaRepository.save(categoria);
-        return convertToDTO(savedCategoria);
-    }
-
-    public CategoriaDTO modificarCategoria(Integer idCategoria, CategoriaDTO categoriaDTO) {
-        Categoria categoria = categoriaRepository.findById(idCategoria)
-                .orElseThrow(() -> new RuntimeException("La categoria no existe con id " + idCategoria));
-
-        categoria.setNombre(categoriaDTO.getNombre());
-        categoria.setDescripcion(categoriaDTO.getDescripcion());
-
-        Categoria savedCategoria = categoriaRepository.save(categoria);
-        return convertToDTO(savedCategoria);
+        categoria.setEstado(false);
+        return convertToDTO(categoriaRepository.save(categoria));
     }
 
     private CategoriaDTO convertToDTO(Categoria c) {
         CategoriaDTO dto = new CategoriaDTO();
         dto.setIdCategoria(c.getIdCategoria());
+        dto.setEstado(c.getEstado());
         dto.setNombre(c.getNombre());
         dto.setDescripcion(c.getDescripcion());
-        dto.setEstado(c.getEstado());
         return dto;
     }
 
@@ -101,5 +74,4 @@ public class CategoriaService {
         categoria.setEstado(true);
         return categoria;
     }
-
 }

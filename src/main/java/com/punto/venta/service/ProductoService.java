@@ -2,15 +2,15 @@ package com.punto.venta.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 import com.punto.venta.dto.ProductoDTO;
+import com.punto.venta.entity.Categoria;
 import com.punto.venta.entity.Producto;
 import com.punto.venta.repository.ProductoRepository;
 
 @Service
 public class ProductoService {
-    
+
     private final ProductoRepository productoRepository;
 
     public ProductoService(ProductoRepository productoRepository) {
@@ -19,74 +19,58 @@ public class ProductoService {
 
     public List<ProductoDTO> listarProductos() {
         return productoRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public List<ProductoDTO> mostrarActivos() {
-    return productoRepository.findByEstadoTrue()
-            .stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
-}
+        return productoRepository.findByEstadoTrueOrderByIdProductoDesc()
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
 
     public List<ProductoDTO> mostrarActivosFiltro(String nombre) {
-    return productoRepository
-            .findByEstadoTrueAndNombreContainingIgnoreCase(nombre)
-            .stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
-}
+        return productoRepository.findByEstadoTrueAndNombreContainingIgnoreCase(nombre)
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
 
     public List<ProductoDTO> mostrarActivosFiltroTop2(String nombre) {
-    return productoRepository
-            .findTop2ByEstadoTrueAndNombreContainingIgnoreCase(nombre)
-            .stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
-}
+        return productoRepository.findTop2ByEstadoTrueAndNombreContainingIgnoreCase(nombre)
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
 
     public ProductoDTO crear(ProductoDTO dto) {
-        boolean duplicado = productoRepository.existsByNombreIgnoreCase(dto.getNombre());
-        if (duplicado) {
+        if (productoRepository.existsByNombreIgnoreCase(dto.getNombre())) {
             throw new RuntimeException("El producto ya existe");
         }
         return convertToDTO(productoRepository.save(convertToEntity(dto)));
     }
 
     public ProductoDTO actualizar(Integer idProducto, ProductoDTO dto) {
-        Producto productoExistente = productoRepository.findById(idProducto)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
-        if (dto.getNombre() != null) {
-            productoExistente.setNombre(dto.getNombre());
-        }
-        if (dto.getDescripcion() != null) {
-            productoExistente.setDescripcion(dto.getDescripcion());
-        }
-        if (dto.getPrecio() != null) {
-            productoExistente.setPrecio(dto.getPrecio());
-        }
-        if (dto.getStock() != null) {
-            productoExistente.setStock(dto.getStock());
-        }
-        return convertToDTO(productoRepository.save(productoExistente));
+        Producto producto = productoRepository.findById(idProducto)
+                .orElseThrow(() -> new RuntimeException("El producto no existe con id " + idProducto));
+        producto.setNombre(dto.getNombre());
+        producto.setDescripcion(dto.getDescripcion());
+        producto.setPrecio(dto.getPrecio());
+        producto.setStock(dto.getStock());
+        producto.setIdCategoria(new Categoria(dto.getIdCategoria()));
+        return convertToDTO(productoRepository.save(producto));
     }
 
-    public void eliminar(Integer idProducto) {
-        if (!productoRepository.existsById(idProducto)) {
-            throw new RuntimeException("Producto no encontrado");
-        }
-        productoRepository.deleteById(idProducto);
+    public ProductoDTO anular(Integer idProducto) {
+        Producto producto = productoRepository.findById(idProducto)
+                .orElseThrow(() -> new RuntimeException("El producto no existe con id " + idProducto));
+        producto.setEstado(false);
+        return convertToDTO(productoRepository.save(producto));
     }
 
-    private ProductoDTO convertToDTO(Producto c) {
+    private ProductoDTO convertToDTO(Producto p) {
         ProductoDTO dto = new ProductoDTO();
-        dto.setIdProducto(c.getIdProducto());
-        dto.setNombre(c.getNombre());
-        dto.setDescripcion(c.getDescripcion());
-        dto.setPrecio(c.getPrecio());
-        dto.setStock(c.getStock());
+        dto.setIdProducto(p.getIdProducto());
+        dto.setEstado(p.getEstado());
+        dto.setNombre(p.getNombre());
+        dto.setDescripcion(p.getDescripcion());
+        dto.setPrecio(p.getPrecio());
+        dto.setStock(p.getStock());
+        dto.setIdCategoria(p.getIdCategoria() != null ? p.getIdCategoria().getIdCategoria() : null);
         return dto;
     }
 
@@ -96,6 +80,8 @@ public class ProductoService {
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
         producto.setStock(dto.getStock());
+        producto.setEstado(true);
+        producto.setIdCategoria(new Categoria(dto.getIdCategoria()));
         return producto;
     }
 }

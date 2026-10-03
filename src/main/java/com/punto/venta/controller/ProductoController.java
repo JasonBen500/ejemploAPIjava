@@ -1,29 +1,22 @@
 package com.punto.venta.controller;
 
+import jakarta.validation.Valid;
 import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.punto.venta.dto.MessageResponse;
 import com.punto.venta.dto.ProductoDTO;
-import com.punto.venta.repository.ProductoRepository;
 import com.punto.venta.service.ProductoService;
+
 @RestController
 @RequestMapping("/productos")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:5173")
 public class ProductoController {
-       private final ProductoRepository productoRepository;
+
     private final ProductoService productoService;
 
-    public ProductoController(ProductoService productoService, ProductoRepository productoRepository) {
-        this.productoRepository = productoRepository;
+    public ProductoController(ProductoService productoService) {
         this.productoService = productoService;
     }
 
@@ -34,28 +27,51 @@ public class ProductoController {
 
     @GetMapping("/activos")
     public List<ProductoDTO> mostrarActivos() {
-    return productoService.mostrarActivos();
+        return productoService.mostrarActivos();
     }
 
     @GetMapping("/activosFiltro")
     public List<ProductoDTO> mostrarActivosFiltro(@RequestParam String nombre) {
-    return productoService.mostrarActivosFiltro(nombre);
+        return productoService.mostrarActivosFiltro(nombre);
     }
 
     @GetMapping("/activosFiltroTop2")
     public List<ProductoDTO> mostrarActivosFiltroTop2(@RequestParam String nombre) {
-    return productoService.mostrarActivosFiltroTop2(nombre);
+        return productoService.mostrarActivosFiltroTop2(nombre);
     }
 
     @PostMapping
-    public ResponseEntity<MessageResponse> crearProducto(@RequestBody ProductoDTO productoDTO) {
+    public ResponseEntity<MessageResponse> crearProducto(@Valid @RequestBody ProductoDTO dto) {
         try {
-            productoService.crear(productoDTO);
-            return ResponseEntity.ok(new MessageResponse("Producto Creado con éxito"));
+            productoService.crear(dto);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new MessageResponse("Producto creado con exito"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new MessageResponse("Error el producto ya existe"));
+                    .body(new MessageResponse(e.getMessage()));
         }
     }
 
+    @PutMapping("/{idProducto}")
+    public ResponseEntity<MessageResponse> actualizarProducto(@PathVariable Integer idProducto,
+            @Valid @RequestBody ProductoDTO dto) {
+        try {
+            productoService.actualizar(idProducto, dto);
+            return ResponseEntity.ok(new MessageResponse("Producto actualizado con exito"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/anular/{idProducto}")
+    public ResponseEntity<MessageResponse> anularProducto(@PathVariable Integer idProducto) {
+        try {
+            productoService.anular(idProducto);
+            return ResponseEntity.ok(new MessageResponse("Producto anulado con exito"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new MessageResponse(e.getMessage()));
+        }
+    }
 }

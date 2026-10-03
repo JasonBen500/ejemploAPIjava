@@ -1,18 +1,16 @@
 package com.punto.venta.service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
 import com.punto.venta.dto.ClienteDTO;
 import com.punto.venta.entity.Cliente;
 import com.punto.venta.repository.ClienteRepository;
 
 @Service
 public class ClienteService {
+
     private final ClienteRepository clienteRepository;
 
     public ClienteService(ClienteRepository clienteRepository) {
@@ -21,97 +19,56 @@ public class ClienteService {
 
     public List<ClienteDTO> listarTodos() {
         return clienteRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public List<ClienteDTO> mostrarActivos(){
-        return clienteRepository.findByEstadoTrue()
-        .stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
+    public List<ClienteDTO> mostrarActivos() {
+        return clienteRepository.findByEstadoTrueOrderByIdClienteDesc()
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public List<ClienteDTO> mostrarActivosFiltroNombre(String nombre){
+    public List<ClienteDTO> mostrarActivosFiltroNombre(String nombre) {
         return clienteRepository.findByEstadoTrueAndNombreContainingIgnoreCase(nombre)
-        .stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public List<ClienteDTO> mostrarActivoFIltroTop2Nombre (String nombre){
-        return clienteRepository.findByEstadoTrueAndApellidoContainingIgnoreCase(nombre)
-        .stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
-    }
-
-    public List<ClienteDTO> mostrarActivoFIltroApellido(String apellido){
+    public List<ClienteDTO> mostrarActivosFiltroApellido(String apellido) {
         return clienteRepository.findByEstadoTrueAndApellidoContainingIgnoreCase(apellido)
-        .stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
-    }
-
-    public List<ClienteDTO> mostrarActivoTop2FiltroApellido(String apellido){
-        return clienteRepository.findTop2ByEstadoTrueAndApellidoContainingIgnoreCase(apellido)
-        .stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
+                .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public ClienteDTO crear(ClienteDTO dto) {
-        boolean duplicado = clienteRepository
-                .existsByNombreIgnoreCaseAndApellidoIgnoreCase(dto.getNombre(),
-                        dto.getApellido());
+        boolean duplicado = clienteRepository.existsByNombreIgnoreCaseAndApellidoIgnoreCase(
+                dto.getNombre(), dto.getApellido());
         if (duplicado) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El cliente ya existe");
+            throw new RuntimeException("El cliente ya existe");
         }
         return convertToDTO(clienteRepository.save(convertToEntity(dto)));
     }
 
     public ClienteDTO actualizar(Integer idCliente, ClienteDTO dto) {
-        Cliente clienteExistente = clienteRepository.findById(idCliente)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
-        if (dto.getNombre() != null) {
-            clienteExistente.setNombre(dto.getNombre());
-        }
-        if (dto.getEstado() != null) {
-            clienteExistente.setEstado(dto.getEstado());
-        }
-        if (dto.getEmail() != null) {
-            clienteExistente.setEmail(dto.getEmail());
-        }
-        if (dto.getTelefono() != null) {
-            clienteExistente.setTelefono(dto.getTelefono());
-        }
-        if (dto.getFecharegistro() != null) {
-            clienteExistente.setFechaRegistro(dto.getFecharegistro());
-        }
-        return convertToDTO(clienteRepository.save(clienteExistente));
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(() -> new RuntimeException("El cliente no existe con id " + idCliente));
+        cliente.setNombre(dto.getNombre());
+        cliente.setApellido(dto.getApellido());
+        cliente.setEmail(dto.getEmail());
+        cliente.setTelefono(dto.getTelefono());
+        return convertToDTO(clienteRepository.save(cliente));
     }
 
-    public ClienteDTO anular(Integer idCliente, ClienteDTO dto) {
-        Cliente clienteExistente = clienteRepository.findById(idCliente)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
-        clienteExistente.setEstado(false);
-        return convertToDTO(clienteRepository.save(clienteExistente));
-    }
-
-    public void eliminar(Integer idCliente) {
-        if (!clienteRepository.existsById(idCliente)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado");
-        }
-        clienteRepository.deleteById(idCliente);
+    public ClienteDTO anular(Integer idCliente) {
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(() -> new RuntimeException("El cliente no existe con id " + idCliente));
+        cliente.setEstado(false);
+        return convertToDTO(clienteRepository.save(cliente));
     }
 
     private ClienteDTO convertToDTO(Cliente c) {
         ClienteDTO dto = new ClienteDTO();
         dto.setIdCliente(c.getIdCliente());
+        dto.setEstado(c.getEstado());
         dto.setNombre(c.getNombre());
         dto.setApellido(c.getApellido());
-        dto.setEstado(c.getEstado());
         dto.setEmail(c.getEmail());
         dto.setTelefono(c.getTelefono());
         dto.setFecharegistro(c.getFechaRegistro());
@@ -122,10 +79,10 @@ public class ClienteService {
         Cliente cliente = new Cliente();
         cliente.setNombre(dto.getNombre());
         cliente.setApellido(dto.getApellido());
-        cliente.setEstado(dto.getEstado());
-        cliente.setTelefono(dto.getTelefono());
         cliente.setEmail(dto.getEmail());
-        cliente.setFechaRegistro(dto.getFecharegistro());
+        cliente.setTelefono(dto.getTelefono());
+        cliente.setFechaRegistro(new Date());
+        cliente.setEstado(true);
         return cliente;
     }
 }
